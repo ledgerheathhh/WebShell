@@ -29,9 +29,9 @@
     
     __block NSHTTPURLResponse *response = nil;
     
-    //html开关打开且是html文件的时候，走html缓存的逻辑
+    //When HTML switch is on and it's an HTML file, use HTML cache logic
     if ([urlString containsString:@".html"]) {
-        /// 本地html资源
+        /// Local HTML resources
         [self getCacheDataByURL:urlString AndCompletion:^(NSData *result) {
             NSData *responseObject =result;
             NSString *mimeType = @"text/html";
@@ -44,14 +44,14 @@
             response = [[NSHTTPURLResponse alloc]initWithURL:request.URL statusCode:200 HTTPVersion:@"HTTP/1.1" headerFields:headerFields];
             
             if (responseObject) {
-                NSLog(@"task加载的本地缓存的html  - %@ -",urlString);
+                NSLog(@"Task loaded local cached HTML - %@ -",urlString);
                 
                 @try {
                     [urlSchemeTask didReceiveResponse:response];
                     [urlSchemeTask didReceiveData:responseObject];
                     [urlSchemeTask didFinish];
                 } @catch (NSException *exception) {
-                    NSLog(@"这个请求停止了 stop = 这里会崩溃 97");
+                    NSLog(@"This request stopped = crash will occur here 97");
                 } @finally {
                     
                 }
@@ -65,7 +65,7 @@
               [urlString containsString:@".png"] ||
               [urlString containsString:@".jpeg"] ||
               [urlString containsString:@".gif"]) {
-        /// 本地其他非html资源
+        /// Local non-HTML resources
         NSString *mimeType = [self mimeTypeForPath:urlString];
         [self getCacheDataByURL:urlString AndCompletion:^(NSData *result) {
             NSData *responseObject =result;
@@ -77,14 +77,14 @@
                     @"Content-Length":[NSString stringWithFormat:@"%ld", responseObjectData.length]
                 };
                 response = [[NSHTTPURLResponse alloc]initWithURL:request.URL statusCode:200 HTTPVersion:@"HTTP/1.1" headerFields:headerFields];
-                NSLog(@"被wkwebview缓存到本地的请求 - %@",response.URL.absoluteString);
+                NSLog(@"Request cached locally by WKWebView - %@",response.URL.absoluteString);
                 
                 @try {
                     [urlSchemeTask didReceiveResponse:response];
                     [urlSchemeTask didReceiveData:responseObject];
                     [urlSchemeTask didFinish];
                 } @catch (NSException *exception) {
-                    NSLog(@"这个请求停止了 stop = 这里会崩溃 97");
+                    NSLog(@"This request stopped = crash will occur here 97");
                 } @finally {
                     
                 }
@@ -101,7 +101,7 @@
 }
 
 - (NSString *)mimeTypeForPath:(NSString *)path {
-    // 根据文件路径返回相应的MIME类型
+    // Return appropriate MIME type based on file path
     NSString *extension = [path pathExtension];
     if ([extension isEqualToString:@"html"]) {
         return @"text/html";
@@ -118,7 +118,7 @@
     }
 }
 
-//根据url获取url的缓存文件数据
+//Get cached file data based on URL
 - (void)getCacheDataByURL:(NSString *)URLString AndCompletion:(nullable void (^)(NSData * result1))completion {
     NSURL *URL = [NSURL URLWithString:URLString];
     NSString *fullPath = URL.path;

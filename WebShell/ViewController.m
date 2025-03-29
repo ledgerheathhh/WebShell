@@ -27,41 +27,41 @@
     [self.webView addSubview:self.progressView];
     [self addObserve];
     
-    // 1、http/https加载在线网页
+    // 1. Loading online webpage via http/https
 //    NSURL *url = [NSURL URLWithString:@"https://www.apple.com"];
 //    NSURLRequest *request = [NSURLRequest requestWithURL:url];
 //    [webView loadRequest:request];
     
-    // 2、File协议加载本地
+    // 2. Loading local files via File protocol
 //    NSString *filePath = [[NSBundle mainBundle] pathForResource:@"index" ofType:@"html"];
 //    NSURL *fileURL = [NSURL fileURLWithPath:filePath];
-//    // 允许访问的目录
+//    // Directory allowed for access
 //    NSURL *readAccessURL = [fileURL URLByDeletingLastPathComponent];
-//    // 加载本地 HTML 文件
+//    // Load local HTML file
 //    [webView loadFileURL:fileURL allowingReadAccessToURL:readAccessURL];
 
-    // 3、自定义协议加载网页
+    // 3. Loading webpage via custom protocol
     NSURL *url = [NSURL URLWithString:@"CNMD://www.ledgerheath.com/index.html"];
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     [self.webView loadRequest:request];
 }
 
-// 页面开始加载时调用
+// Called when page starts loading
 - (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
-    NSLog(@"页面开始加载");
+    NSLog(@"Page loading started");
 }
 
-// 页面加载完成时调用
+// Called when page finishes loading
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
-    NSLog(@"页面加载完成");
+    NSLog(@"Page loading completed");
 }
 
-// 页面加载失败时调用
+// Called when page loading fails
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
-    NSLog(@"页面加载失败: %@", error.localizedDescription);
+    NSLog(@"Page loading failed: %@", error.localizedDescription);
 }
 
-#pragma mark - 添加观察
+#pragma mark - Add Observers
 - (void)addObserve{
     [self.webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:nil];
 }
@@ -73,7 +73,7 @@
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     
     if (object == self.webView) {
-        if ([keyPath isEqualToString:@"estimatedProgress"]) {//进度条
+        if ([keyPath isEqualToString:@"estimatedProgress"]) {// Progress bar
             [self.progressView setAlpha:1.0f];
             [self.progressView setProgress:self.webView.estimatedProgress animated:YES];
             
@@ -96,15 +96,15 @@
             [wkWebConfig setURLSchemeHandler:SchemeHandler.new forURLScheme:@"CNMD"];
         }
 
-        // 创建 WKWebView
+        // Create WKWebView
         WKWebView *webView = [[WKWebView alloc] initWithFrame:self.view.bounds configuration:wkWebConfig];
         webView.navigationDelegate = self;
         [self.view addSubview:webView];
         
-        // 禁用自动生成的约束
+        // Disable automatically generated constraints
         webView.translatesAutoresizingMaskIntoConstraints = NO;
 
-        // 设置约束，使用整个屏幕
+        // Set constraints to use the entire screen
         [NSLayoutConstraint activateConstraints:@[
             [webView.topAnchor constraintEqualToAnchor:self.view.topAnchor],
             [webView.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor],
@@ -116,7 +116,7 @@
     return _webView;
 }
 
-// 进度条
+// Progress bar
 - (UIProgressView *)progressView {
     if (!_progressView) {
         _progressView = [[UIProgressView alloc] initWithFrame:CGRectMake(0, 44, self.view.frame.size.width, 0)];
@@ -133,7 +133,7 @@
     _webView.navigationDelegate = nil;
     _webView.scrollView.delegate = nil;
     
-    //H5停止音频播放
+    // Stop HTML5 audio playback
     if (_webView) {
         [_webView evaluateJavaScript:@"" completionHandler:^(id _Nullable response, NSError * _Nullable error) {
             
