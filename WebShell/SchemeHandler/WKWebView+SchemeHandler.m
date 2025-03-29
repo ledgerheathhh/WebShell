@@ -36,7 +36,7 @@
  */
 + (BOOL)customHandlesURLScheme:(NSString *)urlScheme {
     // Prevent WKWebView from handling our custom scheme
-    if ([urlScheme isEqualToString:@"CNMD"]) {
+    if ([urlScheme isEqualToString:@"QuantumLink"]) {
         return NO;
     } else {
         // Call original implementation (now pointing to customHandlesURLScheme: due to swizzling)

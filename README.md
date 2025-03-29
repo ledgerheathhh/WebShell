@@ -1,10 +1,10 @@
 # WebShell
 
 ## Project Overview
-WebShell is an iOS application that uses WKWebView to load and display web content, with custom URL protocol handling functionality. The app allows loading local HTML resources through custom protocols (such as CNMD://), providing a more flexible way to load web content in iOS applications.
+WebShell is an iOS application that uses WKWebView to load and display web content, with custom URL protocol handling functionality. The app allows loading local HTML resources through custom protocols (such as QuantumLink://), providing a more flexible way to load web content in iOS applications.
 
 ## Main Features
-- Support for loading local HTML resources via custom URL protocol (CNMD://)
+- Support for loading local HTML resources via custom URL protocol (QuantumLink://)
 - Support for loading online web content (http/https)
 - Support for loading local HTML files via File protocol
 - Progress bar showing webpage loading progress
@@ -21,7 +21,7 @@ Main components:
 
 ### How It Works
 1. Register the custom URL protocol handler in WKWebViewConfiguration
-2. When WKWebView encounters a custom protocol URL (e.g., CNMD://), it calls the SchemeHandler to process it
+2. When WKWebView encounters a custom protocol URL (e.g., QuantumLink://), it calls the SchemeHandler to process it
 3. SchemeHandler looks up local resources (HTML, CSS, JS, images, etc.) based on the URL path
 4. Converts local resources to the appropriate response format and returns them to WKWebView
 
@@ -30,14 +30,14 @@ Main components:
 // Configure WKWebView to use custom protocol in ViewController
 WKWebViewConfiguration *wkWebConfig = [[WKWebViewConfiguration alloc] init];
 if (@available(iOS 11.0, *)) {
-    [wkWebConfig setURLSchemeHandler:SchemeHandler.new forURLScheme:@"CNMD"];
+    [wkWebConfig setURLSchemeHandler:SchemeHandler.new forURLScheme:@"QuantumLink"];
 }
 
 // Create WKWebView and load custom protocol URL
 WKWebView *webView = [[WKWebView alloc] initWithFrame:self.view.bounds configuration:wkWebConfig];
 
 // Use custom protocol to load webpage
-NSURL *url = [NSURL URLWithString:@"CNMD://www.ledgerheath.com/index.html"];
+NSURL *url = [NSURL URLWithString:@"QuantumLink://www.ledgerheath.com/index.html"];
 NSURLRequest *request = [NSURLRequest requestWithURL:url];
 [webView loadRequest:request];
 ```
@@ -69,7 +69,7 @@ NSURLRequest *request = [NSURLRequest requestWithURL:url];
 To use this project as a foundation for your own application:
 1. Replace the HTML resources in the JL directory with your own web content
 2. Modify the URL loading method in ViewController.m as needed
-3. If you need to change the custom protocol name, modify all occurrences of "CNMD"
+3. If you need to change the custom protocol name, modify all occurrences of "QuantumLink"
 
 ## Notes
 - The custom protocol handler is only available in iOS 11.0 and above

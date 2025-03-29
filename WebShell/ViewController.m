@@ -10,7 +10,7 @@
 #import "SchemeHandler.h"
 
 // Constants
-NSString * const kCustomURLScheme = @"CNMD";
+NSString * const kCustomURLScheme = @"QuantumLink";
 
 @interface ViewController () <WKNavigationDelegate>
 
