@@ -19,7 +19,7 @@
 }
 
 + (BOOL)customHandlesURLScheme:(NSString *)urlScheme {
-    if([urlScheme isEqualToString:@"http"] || [urlScheme isEqualToString:@"https"]){
+    if([urlScheme isEqualToString:@"CNMD"]){
         return NO;
     }else {
         return [self handlesURLScheme:urlScheme];

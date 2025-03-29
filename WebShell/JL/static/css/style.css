@@ -1,4 +1,4 @@
-﻿@charset "UTF-8";
+@charset "UTF-8";
 /*-----------------------------------------------------------------------------------
 
     Template Name: DATAPRO
@@ -31,7 +31,7 @@
 
 /* 01.  Start Default css */
 
-@import url('7ac4f152a28e4a2692ea9e5741c6322f.css');
+/*@import url('7ac4f152a28e4a2692ea9e5741c6322f.css');*/
 
 html{
 	font-size: 100%;
