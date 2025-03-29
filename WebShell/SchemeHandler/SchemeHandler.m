@@ -15,114 +15,141 @@
 
 @implementation SchemeHandler
 
+/**
+ * Handles the start of a URL scheme task
+ * @param webView The WKWebView that initiated the task
+ * @param urlSchemeTask The task to be handled
+ */
 - (void)webView:(nonnull WKWebView *)webView startURLSchemeTask:(nonnull id<WKURLSchemeTask>)urlSchemeTask {
+    
+    if (!urlSchemeTask || !urlSchemeTask.request) {
+        NSLog(@"Error: Invalid URL scheme task or request");
+        return;
+    }
     
     NSURLRequest *request = urlSchemeTask.request;
     NSString *urlString = request.URL.absoluteString;
     NSDictionary *headerField = request.allHTTPHeaderFields;
-    NSMutableDictionary *HeaderField = [[NSMutableDictionary alloc] initWithDictionary:headerField];
-    if ([HeaderField objectForKey:@"Access-Control-Allow-Origin"]) {
-        
-    }else{
-        [HeaderField setObject:@"*" forKey:@"Access-Control-Allow-Origin"];
+    NSMutableDictionary *headerFields = [[NSMutableDictionary alloc] initWithDictionary:headerField];
+    
+    // Set CORS headers if not already present
+    if (![headerFields objectForKey:@"Access-Control-Allow-Origin"]) {
+        [headerFields setObject:@"*" forKey:@"Access-Control-Allow-Origin"];
     }
     
-    __block NSHTTPURLResponse *response = nil;
+    // Determine file type and handle resource loading
+    NSString *mimeType = [self mimeTypeForPath:urlString];
+    BOOL isSupported = [self isSupportedFileType:urlString];
     
-    //When HTML switch is on and it's an HTML file, use HTML cache logic
-    if ([urlString containsString:@".html"]) {
-        /// Local HTML resources
-        [self getCacheDataByURL:urlString AndCompletion:^(NSData *result) {
-            NSData *responseObject =result;
-            NSString *mimeType = @"text/html";
-            NSData *responseObjectData = (NSData *)responseObject;
-            
-            NSDictionary *headerFields = @{
-                @"Content-Type":[NSString stringWithFormat:@"%@", mimeType],
-                @"Content-Length":[NSString stringWithFormat:@"%ld", responseObjectData.length]
-            };
-            response = [[NSHTTPURLResponse alloc]initWithURL:request.URL statusCode:200 HTTPVersion:@"HTTP/1.1" headerFields:headerFields];
-            
-            if (responseObject) {
-                NSLog(@"Task loaded local cached HTML - %@ -",urlString);
-                
-                @try {
-                    [urlSchemeTask didReceiveResponse:response];
-                    [urlSchemeTask didReceiveData:responseObject];
-                    [urlSchemeTask didFinish];
-                } @catch (NSException *exception) {
-                    NSLog(@"This request stopped = crash will occur here 97");
-                } @finally {
-                    
-                }
-                return;
-            }
-        }];
-        
-    }else if ([urlString containsString:@".js"] ||
-              [urlString containsString:@".css"] ||
-              [urlString containsString:@".jpg"] ||
-              [urlString containsString:@".png"] ||
-              [urlString containsString:@".jpeg"] ||
-              [urlString containsString:@".gif"]) {
-        /// Local non-HTML resources
-        NSString *mimeType = [self mimeTypeForPath:urlString];
-        [self getCacheDataByURL:urlString AndCompletion:^(NSData *result) {
-            NSData *responseObject =result;
-            if ([responseObject isKindOfClass:[NSData class]]) {
-                NSData *responseObjectData = (NSData *)responseObject;
-                
-                NSDictionary *headerFields = @{
-                    @"Content-Type":[NSString stringWithFormat:@"%@", mimeType],
-                    @"Content-Length":[NSString stringWithFormat:@"%ld", responseObjectData.length]
-                };
-                response = [[NSHTTPURLResponse alloc]initWithURL:request.URL statusCode:200 HTTPVersion:@"HTTP/1.1" headerFields:headerFields];
-                NSLog(@"Request cached locally by WKWebView - %@",response.URL.absoluteString);
-                
-                @try {
-                    [urlSchemeTask didReceiveResponse:response];
-                    [urlSchemeTask didReceiveData:responseObject];
-                    [urlSchemeTask didFinish];
-                } @catch (NSException *exception) {
-                    NSLog(@"This request stopped = crash will occur here 97");
-                } @finally {
-                    
-                }
-                return;
-            }
-        }];
-        
+    if (!isSupported) {
+        [self handleUnsupportedFileType:urlSchemeTask withRequest:request];
+        return;
     }
+    
+    // Load resource from cache
+    [self getCacheDataByURL:urlString AndCompletion:^(NSData *result) {
+        if (!result) {
+            [self handleResourceNotFound:urlSchemeTask withRequest:request urlString:urlString];
+            return;
+        }
+        
+        // Create response with appropriate headers
+        NSData *responseData = result;
+        NSDictionary *responseHeaders = @{
+            @"Content-Type": mimeType,
+            @"Content-Length": [NSString stringWithFormat:@"%ld", responseData.length],
+            @"Access-Control-Allow-Origin": @"*"
+        };
+        
+        NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL 
+                                                                  statusCode:200 
+                                                                 HTTPVersion:@"HTTP/1.1" 
+                                                                headerFields:responseHeaders];
+        
+        // Log resource loading
+        NSLog(@"Loaded resource: %@ (MIME: %@)", urlString, mimeType);
+        
+        // Send response to WebView
+        @try {
+            [urlSchemeTask didReceiveResponse:response];
+            [urlSchemeTask didReceiveData:responseData];
+            [urlSchemeTask didFinish];
+        } @catch (NSException *exception) {
+            NSLog(@"Error handling URL scheme task: %@", exception.reason);
+        }
+    }];
 
 }
 
+/**
+ * Handles stopping a URL scheme task
+ * @param webView The WKWebView that initiated the task
+ * @param urlSchemeTask The task to be stopped
+ */
 - (void)webView:(nonnull WKWebView *)webView stopURLSchemeTask:(nonnull id<WKURLSchemeTask>)urlSchemeTask { 
-    
+    // Clean up any resources associated with this task
+    NSLog(@"Stopping URL scheme task: %@", urlSchemeTask.request.URL.absoluteString);
 }
 
+/**
+ * Determines the MIME type for a given file path
+ * @param path The file path
+ * @return The MIME type string
+ */
 - (NSString *)mimeTypeForPath:(NSString *)path {
     // Return appropriate MIME type based on file path
-    NSString *extension = [path pathExtension];
-    if ([extension isEqualToString:@"html"]) {
-        return @"text/html";
-    } else if ([extension isEqualToString:@"css"]) {
-        return @"text/css";
-    } else if ([extension isEqualToString:@"js"]) {
-        return @"application/javascript";
-    } else if ([extension isEqualToString:@"png"]) {
-        return @"image/png";
-    } else if ([extension isEqualToString:@"jpg"] || [extension isEqualToString:@"jpeg"]) {
-        return @"image/jpeg";
-    } else {
-        return @"application/octet-stream";
-    }
+    NSString *extension = [[path pathExtension] lowercaseString];
+    
+    // Use a dictionary for faster lookup
+    static NSDictionary *mimeTypes = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        mimeTypes = @{
+            @"html": @"text/html",
+            @"htm": @"text/html",
+            @"css": @"text/css",
+            @"js": @"application/javascript",
+            @"json": @"application/json",
+            @"xml": @"application/xml",
+            @"png": @"image/png",
+            @"jpg": @"image/jpeg",
+            @"jpeg": @"image/jpeg",
+            @"gif": @"image/gif",
+            @"svg": @"image/svg+xml",
+            @"ico": @"image/x-icon",
+            @"txt": @"text/plain",
+            @"pdf": @"application/pdf",
+            @"mp3": @"audio/mpeg",
+            @"mp4": @"video/mp4",
+            @"webp": @"image/webp",
+            @"woff": @"font/woff",
+            @"woff2": @"font/woff2",
+            @"ttf": @"font/ttf",
+            @"otf": @"font/otf",
+            @"eot": @"application/vnd.ms-fontobject"
+        };
+    });
+    
+    NSString *mimeType = mimeTypes[extension];
+    return mimeType ?: @"application/octet-stream";
 }
 
-//Get cached file data based on URL
+/**
+ * Gets cached file data based on URL
+ * @param URLString The URL string of the resource
+ * @param completion Completion block with the cached data
+ */
 - (void)getCacheDataByURL:(NSString *)URLString AndCompletion:(nullable void (^)(NSData * result1))completion {
+    if (!URLString || URLString.length == 0) {
+        NSLog(@"Error: Invalid URL string");
+        if (completion) {
+            completion(nil);
+        }
+        return;
+    }
+    
     NSURL *URL = [NSURL URLWithString:URLString];
     NSString *fullPath = URL.path;
-//    NSString *directoryPath = [fullPath stringByDeletingLastPathComponent];
     
     NSString *fileNameWithExtension = [fullPath lastPathComponent];
     NSString *fileNameWithoutExtension = [[fullPath lastPathComponent] stringByDeletingPathExtension];
@@ -130,19 +157,100 @@
     
     NSString *filePath = [[NSBundle mainBundle] pathForResource:fileNameWithoutExtension ofType:fileExtension];
     
-    NSData *cacheData = nil;
+    if (!filePath) {
+        NSLog(@"File not found: %@", fileNameWithExtension);
+        if (completion) {
+            completion(nil);
+        }
+        return;
+    }
+    
     NSError *error = nil;
+    NSData *cacheData = [NSData dataWithContentsOfFile:filePath options:NSDataReadingMappedIfSafe error:&error];
+    
     if (error) {
         NSLog(@"Error reading file: %@", error.localizedDescription);
-    } else {
-        if(filePath){
-            cacheData = [NSData dataWithContentsOfFile:filePath options:NSDataReadingMappedIfSafe error:&error];
-            if(completion){
-                completion(cacheData);
-            }
-        }else {
-            NSLog(@"File:%@ Not Exist", fileNameWithExtension);
+        if (completion) {
+            completion(nil);
         }
+        return;
+    }
+    
+    if (completion) {
+        completion(cacheData);
+    }
+}
+/**
+ * Checks if the file type is supported
+ * @param urlString The URL string to check
+ * @return YES if the file type is supported, NO otherwise
+ */
+- (BOOL)isSupportedFileType:(NSString *)urlString {
+    return [urlString containsString:@".html"] ||
+           [urlString containsString:@".js"] ||
+           [urlString containsString:@".css"] ||
+           [urlString containsString:@".jpg"] ||
+           [urlString containsString:@".png"] ||
+           [urlString containsString:@".jpeg"] ||
+           [urlString containsString:@".gif"];
+}
+
+/**
+ * Handles unsupported file types
+ * @param urlSchemeTask The URL scheme task
+ * @param request The URL request
+ */
+- (void)handleUnsupportedFileType:(id<WKURLSchemeTask>)urlSchemeTask withRequest:(NSURLRequest *)request {
+    NSString *errorMessage = [NSString stringWithFormat:@"Unsupported file type: %@", request.URL.absoluteString];
+    NSLog(@"%@", errorMessage);
+    
+    NSData *errorData = [errorMessage dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *headers = @{
+        @"Content-Type": @"text/plain",
+        @"Content-Length": [NSString stringWithFormat:@"%ld", errorData.length]
+    };
+    
+    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL 
+                                                              statusCode:415 
+                                                             HTTPVersion:@"HTTP/1.1" 
+                                                            headerFields:headers];
+    
+    @try {
+        [urlSchemeTask didReceiveResponse:response];
+        [urlSchemeTask didReceiveData:errorData];
+        [urlSchemeTask didFinish];
+    } @catch (NSException *exception) {
+        NSLog(@"Error handling unsupported file type: %@", exception.reason);
+    }
+}
+
+/**
+ * Handles resource not found errors
+ * @param urlSchemeTask The URL scheme task
+ * @param request The URL request
+ * @param urlString The URL string that was not found
+ */
+- (void)handleResourceNotFound:(id<WKURLSchemeTask>)urlSchemeTask withRequest:(NSURLRequest *)request urlString:(NSString *)urlString {
+    NSString *errorMessage = [NSString stringWithFormat:@"Resource not found: %@", urlString];
+    NSLog(@"%@", errorMessage);
+    
+    NSData *errorData = [errorMessage dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *headers = @{
+        @"Content-Type": @"text/plain",
+        @"Content-Length": [NSString stringWithFormat:@"%ld", errorData.length]
+    };
+    
+    NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL 
+                                                              statusCode:404 
+                                                             HTTPVersion:@"HTTP/1.1" 
+                                                            headerFields:headers];
+    
+    @try {
+        [urlSchemeTask didReceiveResponse:response];
+        [urlSchemeTask didReceiveData:errorData];
+        [urlSchemeTask didFinish];
+    } @catch (NSException *exception) {
+        NSLog(@"Error handling resource not found: %@", exception.reason);
     }
 }
 @end

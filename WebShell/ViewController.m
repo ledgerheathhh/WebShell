@@ -9,13 +9,14 @@
 #import "WebKit/WebKit.h"
 #import "SchemeHandler.h"
 
+// Constants
+NSString * const kCustomURLScheme = @"CNMD";
+
 @interface ViewController () <WKNavigationDelegate>
 
-@property(nonatomic, strong)NSString *url;
-
-@property(nonatomic, strong)UIProgressView *progressView;
-
-@property(nonatomic, strong)WKWebView *webView;
+@property(nonatomic, strong) NSString *url;
+@property(nonatomic, strong) UIProgressView *progressView;
+@property(nonatomic, strong) WKWebView *webView;
 
 @end
 
@@ -41,7 +42,8 @@
 //    [webView loadFileURL:fileURL allowingReadAccessToURL:readAccessURL];
 
     // 3. Loading webpage via custom protocol
-    NSURL *url = [NSURL URLWithString:@"CNMD://www.ledgerheath.com/index.html"];
+    NSString *urlString = [NSString stringWithFormat:@"%@://www.ledgerheath.com/index.html", kCustomURLScheme];
+    NSURL *url = [NSURL URLWithString:urlString];
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     [self.webView loadRequest:request];
 }
@@ -93,7 +95,7 @@
     if (!_webView) {
         WKWebViewConfiguration *wkWebConfig = [[WKWebViewConfiguration alloc] init];
         if (@available(iOS 11.0, *)) {
-            [wkWebConfig setURLSchemeHandler:SchemeHandler.new forURLScheme:@"CNMD"];
+            [wkWebConfig setURLSchemeHandler:SchemeHandler.new forURLScheme:kCustomURLScheme];
         }
 
         // Create WKWebView
