@@ -1,3 +1,3 @@
 #import <Foundation/Foundation.h>
 
-extern NSString * const WKWebViewJavascriptBridgeJS; 
+extern NSString * const WKWebViewJavascriptBridgeJS;
