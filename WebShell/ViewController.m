@@ -8,6 +8,7 @@
 #import "ViewController.h"
 #import "WebKit/WebKit.h"
 #import "SchemeHandler.h"
+#import "WKWebViewJavascriptBridge.h"
 
 // Constants
 NSString * const kCustomURLScheme = @"QuantumLink";
@@ -46,6 +47,34 @@ NSString * const kCustomURLScheme = @"QuantumLink";
     NSURL *url = [NSURL URLWithString:urlString];
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     [self.webView loadRequest:request];
+    
+    WKWebViewJavascriptBridge *bridge = [[WKWebViewJavascriptBridge alloc] initWithWebView:self.webView];
+
+    // Register a handler
+    [bridge registerHandler:@"testHandler" handler:^(NSDictionary *parameters, void (^callback)(id responseData)) {
+        // Handle the message from JavaScript
+        NSLog(@"Received message: %@", parameters);
+        // Send response back to JavaScript
+        callback(@{@"status": @"success"});
+    }];
+
+    // Call JavaScript handler
+    [bridge callHandler:@"jsHandler" data:@{@"key": @"value"} callback:^(id responseData) {
+        NSLog(@"Got response: %@", responseData);
+    }];
+    
+    /**
+     The JavaScript side remains exactly the same as before. You can use it like this:
+
+     WKWebViewJavascriptBridge.registerHandler('jsHandler', function(data, callback) {
+         console.log('Received message from iOS:', data);
+         callback({status: 'success'});
+     });
+
+     WKWebViewJavascriptBridge.callHandler('testHandler', {key: 'value'}, function(response) {
+         console.log('Got response from iOS:', response);
+     });
+     */
 }
 
 // Called when page starts loading
