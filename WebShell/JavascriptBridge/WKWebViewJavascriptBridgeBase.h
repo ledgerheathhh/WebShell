@@ -24,4 +24,4 @@ typedef void (^WKWebViewJavascriptBridgeHandler)(NSDictionary * _Nullable parame
 
 @end
 
-NS_ASSUME_NONNULL_END 
+NS_ASSUME_NONNULL_END
